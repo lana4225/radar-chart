@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>学級力レーダーチャート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2b3a36;
+    --paper:#faf8f3;
+    --panel:#ffffff;
+    --line:#e3ddd0;
+    --teal:#1f6f65;
+    --teal-soft:#e6efec;
+    --coral:#e8734a;
+    --coral-soft:#fbe7de;
+    --grid:#d9d2c2;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Zen Kaku Gothic New","Hiragino Sans",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .app{
+    display:grid;
+    grid-template-columns:340px 1fr;
+    gap:20px;
+    padding:20px;
+    min-height:100vh;
+  }
+  @media (max-width:820px){
+    .app{grid-template-columns:1fr;}
+  }
+  h1{
+    font-family:"Zen Maru Gothic",sans-serif;
+    font-weight:900;
+    font-size:20px;
+    color:var(--teal);
+    margin:0 0 4px;
+  }
+  .sub{
+    font-size:12px;
+    color:#7a8783;
+    margin:0 0 18px;
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:18px;
+  }
+  .panel + .panel{margin-top:16px;}
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:700;
+    color:var(--teal);
+    margin-bottom:6px;
+  }
+  input[type=text]{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-family:inherit;
+    font-size:14px;
+    background:#fff;
+    margin-bottom:14px;
+  }
+  textarea{
+    width:100%;
+    padding:9px 10px;
+    border:1.5px dashed var(--teal);
+    border-radius:8px;
+    font-family:inherit;
+    font-size:14px;
+    background:var(--teal-soft);
+    resize:vertical;
+    margin-bottom:6px;
+  }
+  textarea:focus{outline:none;border-color:var(--coral);}
+  .paste-hint{
+    font-size:11px;
+    color:#8a9490;
+    margin:0 0 4px;
+    line-height:1.5;
+  }
+  .paste-ok{
+    font-size:11px;
+    color:var(--teal);
+    font-weight:700;
+    margin:0 0 10px;
+    min-height:14px;
+  }
+  .score-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .score-row .cat{
+    flex:1;
+    font-size:13px;
+  }
+  .score-row input[type=range]{
+    width:110px;
+    accent-color:var(--teal);
+  }
+  .score-row .val{
+    width:28px;
+    text-align:right;
+    font-weight:700;
+    font-size:13px;
+    color:var(--teal);
+  }
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+  }
+  .btn-primary{
+    width:100%;
+    background:var(--teal);
+    color:#fff;
+    padding:11px;
+    border-radius:9px;
+    font-weight:700;
+    font-size:14px;
+    margin-top:6px;
+  }
+  .btn-primary:hover{background:#175951;}
+  .btn-ghost{
+    background:var(--teal-soft);
+    color:var(--teal);
+    padding:9px 12px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:700;
+    width:100%;
+    margin-top:10px;
+  }
+  .btn-ghost:hover{background:#d8e6e1;}
+  .month-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .month-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    font-size:13px;
+  }
+  .swatch{
+    width:12px;height:12px;border-radius:50%;flex-shrink:0;
+  }
+  .month-item .name{flex:1;font-weight:700;}
+  .month-item .avg{
+    font-size:12px;color:#7a8783;
+  }
+  .icon-btn{
+    background:none;
+    color:#b0a99a;
+    font-size:15px;
+    line-height:1;
+    padding:2px 4px;
+    border-radius:5px;
+  }
+  .icon-btn:hover{color:var(--coral);background:var(--coral-soft);}
+  .chart-area{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:24px;
+    display:flex;
+    flex-direction:column;
+  }
+  .chart-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:6px;
+  }
+  .chart-title{
+    font-family:"Zen Maru Gothic",sans-serif;
+    font-weight:900;
+    font-size:24px;
+    color:var(--ink);
+  }
+  .chart-title-sub{
+    font-size:13px;
+    color:#7a8783;
+    margin-top:2px;
+  }
+  .export-btn{
+    background:var(--coral);
+    color:#fff;
+    padding:10px 18px;
+    border-radius:9px;
+    font-weight:700;
+    font-size:13px;
+    white-space:nowrap;
+  }
+  .export-btn:hover{background:#d15f38;}
+  #chartWrap{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:460px;
+  }
+  .footer-note{
+    text-align:center;
+    font-size:12px;
+    color:#9a9284;
+    background:var(--teal-soft);
+    border-radius:10px;
+    padding:10px 14px;
+    margin-top:12px;
+    line-height:1.7;
+  }
+  .empty{
+    text-align:center;
+    color:#a39c8d;
+    font-size:13px;
+    padding:30px 10px;
+  }
+  @media print{
+    @page{ size: A4 landscape; margin: 5mm; }
+    body{background:#fff;}
+    .side{display:none !important;}
+    .app{display:block;padding:0;}
+    .chart-area{border:none;padding:0;}
+    .export-btn{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="side">
+    <h1>学級力レーダーチャート</h1>
+    <p class="sub">毎月のふりかえりを記録します</p>
+
+    <div class="panel">
+      <label>クラス名(チャートに表示されます)</label>
+      <input type="text" id="className" placeholder="6年2組">
+      <label>学級の合言葉(チャートのタイトルに表示)</label>
+      <input type="text" id="mottoInput" placeholder="笑顔真剣">
+      <label>① スプレッドシートから貼り付け</label>
+      <textarea id="pasteBox" rows="2" placeholder="集計シートの表をコピーしてここに貼り付け(複数月まとめてOK)"></textarea>
+      <p class="paste-hint">「集計」シートの表全体(年・月・7観点の行)を選択→コピー→ここに貼り付けると、全月分がまとめて登録できます。1か月分(平均点7つ)だけの貼り付けもOKです</p>
+      <p class="paste-ok" id="pasteStatus"></p>
+      <label style="margin-top:14px;">② 月のラベル</label>
+      <input type="text" id="monthLabel" placeholder="第7回(2月)">
+      <label>③ 確認・調整</label>
+      <div id="scoreInputs"></div>
+      <button class="btn-primary" id="addBtn">この月を記録する</button>
+    </div>
+
+    <div class="panel">
+      <label>記録した月(チェックで表示・非表示)</label>
+      <div class="month-list" id="monthList"></div>
+      <div class="empty" id="emptyMsg">まだ記録がありません</div>
+    </div>
+
+    <div class="panel">
+      <label>観点の編集(1行に1つ)</label>
+      <textarea id="catBox" rows="8" style="border-style:solid;background:#fff;"></textarea>
+      <p class="paste-hint">学級に合わせて観点を書きかえられます。数を増減するとチャートの形も自動で変わります(5つなら五角形)。観点の数を変えた場合は、集計シートのデータを貼り付け直してください。</p>
+      <button class="btn-ghost" id="applyCats">観点を反映する</button>
+    </div>
+  </div>
+
+  <div class="chart-area">
+    <div class="chart-head">
+      <div>
+        <div class="chart-title">学級力向上プロジェクト</div>
+        <div class="chart-title-sub">「笑顔真剣」を達成するための7つの観点</div>
+      </div>
+      <button class="export-btn" id="exportBtn">画像として保存</button>
+    </div>
+    <div id="chartWrap"></div>
+    <div class="footer-note" id="avgNote"></div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_CATEGORIES = ["仕事(責任感)","あいさつ","掃除","学習","メリハリ・切り替え","生活面","仲良し"];
+let CATEGORIES = DEFAULT_CATEGORIES.slice();
+const COLORS = ["#F2994A","#2D9CDB","#27AE60","#9B51E0","#EB5757","#1F6F65","#C9A227","#E85E9E"];
+const STORAGE_KEY = "radar_months";
+const CLASS_KEY = "radar_class";
+const CAT_KEY = "radar_categories";
+const MOTTO_KEY = "radar_motto";
+
+let months = [];
+
+function defaultScores(){ return CATEGORIES.map(()=>3); }
+
+function buildScoreInputs(){
+  const wrap = document.getElementById('scoreInputs');
+  wrap.innerHTML = '';
+  CATEGORIES.forEach((cat, i)=>{
+    const row = document.createElement('div');
+    row.className = 'score-row';
+    row.innerHTML = `
+      <span class="cat">${cat}</span>
+      <input type="range" min="1" max="5" step="0.1" value="3" data-idx="${i}">
+      <span class="val" data-valfor="${i}">3.0</span>
+    `;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('input[type=range]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      document.querySelector(`[data-valfor="${inp.dataset.idx}"]`).textContent = parseFloat(inp.value).toFixed(1);
+    });
+  });
+}
+
+async function loadMonths(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    months = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    months = [];
+  }
+}
+
+async function saveMonths(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(months));
+  }catch(e){
+    console.error('保存に失敗しました', e);
+  }
+}
+
+function colorFor(i){ return COLORS[i % COLORS.length]; }
+
+function renderMonthList(){
+  const list = document.getElementById('monthList');
+  const empty = document.getElementById('emptyMsg');
+  list.innerHTML = '';
+  empty.style.display = months.length ? 'none' : 'block';
+  months.forEach((m, i)=>{
+    const avg = (m.scores.reduce((a,b)=>a+b,0)/m.scores.length).toFixed(1);
+    const item = document.createElement('div');
+    item.className = 'month-item';
+    item.innerHTML = `
+      <input type="checkbox" ${m.visible!==false ? 'checked':''} data-vis="${i}">
+      <span class="swatch" style="background:${colorFor(i)}"></span>
+      <span class="name">${m.label}</span>
+      <span class="avg">平均${avg}</span>
+      <button class="icon-btn" data-del="${i}">✕</button>
+    `;
+    list.appendChild(item);
+  });
+  list.querySelectorAll('[data-vis]').forEach(cb=>{
+    cb.addEventListener('change', async ()=>{
+      months[cb.dataset.vis].visible = cb.checked;
+      await saveMonths();
+      renderChart();
+    });
+  });
+  list.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      months.splice(parseInt(btn.dataset.del),1);
+      await saveMonths();
+      renderMonthList();
+      renderChart();
+    });
+  });
+}
+
+function polarPoint(cx, cy, r, angleDeg){
+  const rad = (angleDeg - 90) * Math.PI/180;
+  return [cx + r*Math.cos(rad), cy + r*Math.sin(rad)];
+}
+
+function renderChart(){
+  const wrap = document.getElementById('chartWrap');
+  const note = document.getElementById('avgNote');
+  const canvasW = 1280, canvasH = 720; // 16:9, matches PowerPoint widescreen slide
+  const legendW = 150; // kept slim, pinned to the right edge
+  const chartAreaW = canvasW - legendW;
+  const cx = chartAreaW/2, cy = canvasH/2 + 4;
+  const maxR = 250;
+  const n = CATEGORIES.length;
+  const step = 360/n;
+  const visibleMonths = months.filter(m=>m.visible!==false);
+
+  // per-axis average across visible months
+  const axisAverages = CATEGORIES.map((_, i)=>{
+    if(visibleMonths.length===0) return null;
+    let sum = 0, cnt = 0;
+    visibleMonths.forEach(m=>{
+      const raw = m.scores[i];
+      if(typeof raw === 'number' && !isNaN(raw)){ sum += raw; cnt++; }
+    });
+    return cnt ? sum/cnt : null;
+  });
+
+  function estWidth(str, fontSize){
+    let w = 0;
+    for(const ch of str){
+      w += /[\x00-\x7F]/.test(ch) ? fontSize*0.56 : fontSize*0.98;
+    }
+    return w;
+  }
+
+  let svg = `<svg viewBox="0 0 ${canvasW} ${canvasH}" width="100%" style="max-width:1200px">`;
+
+  // クラス名 + 合言葉 + タイトル(書き出し画像にも含まれる)
+  const classNameVal = (document.getElementById('className') ? document.getElementById('className').value.trim() : '');
+  const mottoVal = (document.getElementById('mottoInput') ? document.getElementById('mottoInput').value.trim() : '');
+  const chartTitleText = (classNameVal ? classNameVal + '　' : '') + (mottoVal ? '「' + mottoVal + '」' : '') + '学級力レーダーチャート';
+  svg += `<text x="24" y="46" font-size="28" font-weight="900" fill="#1f6f65" font-family="Zen Maru Gothic, sans-serif">${chartTitleText}</text>`;
+
+  // grid rings
+  for(let ring=1; ring<=5; ring++){
+    const r = maxR * ring/5;
+    let pts = [];
+    for(let i=0;i<n;i++){
+      pts.push(polarPoint(cx,cy,r,i*step).join(','));
+    }
+    svg += `<polygon points="${pts.join(' ')}" fill="none" stroke="${ring===5 ? '#222222':'#777777'}" stroke-width="${ring===5 ? 1.6 : 1.2}"/>`;
+  }
+  // axes + labels + per-axis averages
+  const labelFontSize = 30;
+  for(let i=0;i<n;i++){
+    const [x,y] = polarPoint(cx,cy,maxR,i*step);
+    svg += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#777777" stroke-width="1.2"/>`;
+    const angle = i*step - 90;
+    const cosA = Math.cos(angle*Math.PI/180);
+    const sinA = Math.sin(angle*Math.PI/180);
+    const anchor = Math.abs(cosA) < 0.15 ? 'middle' : (cosA > 0 ? 'start' : 'end');
+    const labelR = maxR + 46 + Math.abs(sinA)*12;
+    const [lx,ly] = polarPoint(cx,cy,labelR,i*step);
+    svg += `<text x="${lx}" y="${ly}" font-size="${labelFontSize}" font-weight="700" fill="#2b3a36" text-anchor="${anchor}" dominant-baseline="middle" font-family="Zen Maru Gothic, sans-serif">${CATEGORIES[i]}</text>`;
+
+    if(axisAverages[i] !== null){
+      const labelW = estWidth(CATEGORIES[i], labelFontSize);
+      let bx;
+      if(anchor === 'start') bx = lx + labelW/2;
+      else if(anchor === 'end') bx = lx - labelW/2;
+      else bx = lx;
+      const by = ly + 40;
+      const avgText = axisAverages[i].toFixed(1);
+      const bw = 26 + avgText.length*12;
+      svg += `<rect x="${bx - bw/2}" y="${by-19}" width="${bw}" height="36" rx="18" fill="#e6efec" stroke="#1f6f65" stroke-width="1.5"/>`;
+      svg += `<text x="${bx}" y="${by}" font-size="20" font-weight="700" fill="#1f6f65" text-anchor="middle" dominant-baseline="central" font-family="Zen Kaku Gothic New, sans-serif">${avgText}</text>`;
+    }
+  }
+
+  // data polygons
+  visibleMonths.forEach((m)=>{
+    const idx = months.indexOf(m);
+    const color = colorFor(idx);
+    let pts = [];
+    CATEGORIES.forEach((_, i)=>{
+      const raw = m.scores[i];
+      const s = (typeof raw === 'number' && !isNaN(raw)) ? raw : 1;
+      const r = maxR * (Math.max(1,Math.min(5,s))/5);
+      pts.push(polarPoint(cx,cy,r,i*step));
+    });
+    svg += `<polygon points="${pts.map(p=>p.join(',')).join(' ')}" fill="${color}" fill-opacity="0.18" stroke="${color}" stroke-width="3.6"/>`;
+    pts.forEach(p=>{
+      svg += `<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="${color}"/>`;
+    });
+  });
+
+  // embedded legend: slim column pinned to the right edge
+  if(visibleMonths.length){
+    const legendX = cx + maxR + 210;
+    const rowH = Math.min(36, (canvasH-40)/visibleMonths.length);
+    const startY = (canvasH - rowH*visibleMonths.length)/2 + rowH/2;
+    visibleMonths.forEach((m, order)=>{
+      const idx = months.indexOf(m);
+      const color = colorFor(idx);
+      const avg = (m.scores.reduce((a,b)=>a+b,0)/m.scores.length).toFixed(1);
+      const rowY = startY + order*rowH;
+      svg += `<rect x="${legendX}" y="${rowY-6}" width="26" height="9" rx="4.5" fill="${color}"/>`;
+      svg += `<text x="${legendX+34}" y="${rowY}" font-size="17" font-weight="700" fill="${color}" dominant-baseline="middle" font-family="Zen Kaku Gothic New, sans-serif">${m.label}　${avg}</text>`;
+    });
+  }
+
+  svg += `</svg>`;
+
+  if(visibleMonths.length===0){
+    wrap.innerHTML = `<div class="empty" style="font-size:14px;padding:60px 20px;">左のフォームから月ごとの平均点を入力すると<br>ここにレーダーチャートが表示されます</div>`;
+    note.innerHTML = '';
+    return;
+  }
+
+  wrap.innerHTML = svg;
+
+  const validAvgs = axisAverages.filter(v=>typeof v==='number' && !isNaN(v));
+  const overall = validAvgs.length ? validAvgs.reduce((a,b)=>a+b,0)/validAvgs.length : 0;
+  note.innerHTML = `クラス全体平均：　${overall.toFixed(1)}`;
+}
+
+function suggestLabel(){
+  const now = new Date();
+  const month = now.getMonth()+1;
+  return `第${months.length+1}回(${month}月)`;
+}
+
+function setSliderValues(scores){
+  const sliders = Array.from(document.querySelectorAll('#scoreInputs input[type=range]'))
+    .sort((a,b)=>a.dataset.idx-b.dataset.idx);
+  sliders.forEach((s,i)=>{
+    if(scores[i]===undefined) return;
+    const v = Math.max(1, Math.min(5, scores[i]));
+    s.value = v;
+    document.querySelector(`[data-valfor="${s.dataset.idx}"]`).textContent = v.toFixed(1);
+  });
+}
+
+let pendingRows = null;
+
+function parseRows(text){
+  const lines = text.split(/[\n\r]+/).map(l=>l.trim()).filter(l=>l.length>0);
+  const rows = [];
+  lines.forEach(line=>{
+    const tokens = line.split(/[\t,]+|\s+/).map(t=>t.trim()).filter(t=>t.length>0);
+    const nums = [];
+    let labelGuess = '';
+    tokens.forEach(tok=>{
+      const cleaned = tok.replace(/[^0-9.\-]/g,'');
+      const num = parseFloat(cleaned);
+      if(!isNaN(num) && cleaned!==''){
+        nums.push(num);
+      } else if(!labelGuess && /[^\s]/.test(tok)){
+        labelGuess = tok;
+      }
+    });
+    // 集計シートの行: 年, 月, 各観点平均(, 全体平均) の形式を自動判別
+    const N = CATEGORIES.length;
+    if(nums.length>=N+2 && nums[0]>=2000 && nums[0]<=2100 && nums[1]>=1 && nums[1]<=12){
+      rows.push({month:nums[1], scores:nums.slice(2, 2+N), labelGuess});
+    } else if(nums.length>=N){
+      rows.push({month:null, scores:nums.slice(0, N), labelGuess});
+    }
+  });
+  return rows;
+}
+
+function handlePaste(){
+  const text = document.getElementById('pasteBox').value;
+  const status = document.getElementById('pasteStatus');
+  const addBtn = document.getElementById('addBtn');
+  pendingRows = null;
+  addBtn.textContent = 'この月を記録する';
+  if(!text.trim()){ status.textContent=''; return; }
+  const rows = parseRows(text);
+  if(rows.length===0){
+    // 数値が7個未満だった場合のヒント
+    const anyNums = text.match(/[0-9.]+/g);
+    status.textContent = anyNums ? `数値が${anyNums.length}個しか見つかりませんでした(1か月あたり${CATEGORIES.length}個必要です)` : '';
+    return;
+  }
+  if(rows.length===1){
+    const r = rows[0];
+    setSliderValues(r.scores);
+    status.textContent = `✓ 1か月分を読み取りました(${r.scores.map(n=>n.toFixed(1)).join(' / ')})`;
+    const labelInput = document.getElementById('monthLabel');
+    if(!labelInput.value.trim()){
+      if(r.month){
+        labelInput.value = `第${months.length+1}回(${r.month}月)`;
+      } else {
+        labelInput.value = r.labelGuess || suggestLabel();
+      }
+    }
+  } else {
+    pendingRows = rows;
+    status.textContent = `✓ ${rows.length}か月分を読み取りました。下のボタンでまとめて登録します(現在の記録は置きかえられます)`;
+    addBtn.textContent = `${rows.length}か月分をまとめて記録する`;
+  }
+}
+
+document.getElementById('pasteBox').addEventListener('input', handlePaste);
+document.getElementById('pasteBox').addEventListener('paste', ()=>{ setTimeout(handlePaste, 0); });
+
+document.getElementById('addBtn').addEventListener('click', async ()=>{
+  const labelInput = document.getElementById('monthLabel');
+
+  // 複数月まとめて登録(集計シートの表を貼り付けた場合)
+  if(pendingRows && pendingRows.length > 1){
+    if(months.length > 0 && !confirm(`現在の記録(${months.length}件)を置きかえて、${pendingRows.length}か月分を登録します。よろしいですか?`)){
+      return;
+    }
+    months = pendingRows.map((r, i)=>({
+      label: r.month ? `第${i+1}回(${r.month}月)` : `第${i+1}回`,
+      scores: r.scores,
+      visible: true
+    }));
+    pendingRows = null;
+    await saveMonths();
+    labelInput.value = '';
+    document.getElementById('pasteBox').value = '';
+    document.getElementById('pasteStatus').textContent = '';
+    document.getElementById('addBtn').textContent = 'この月を記録する';
+    buildScoreInputs();
+    renderMonthList();
+    renderChart();
+    return;
+  }
+
+  // 1か月分の登録
+  let label = labelInput.value.trim();
+  if(!label){
+    label = `第${months.length+1}回`;
+  }
+  const scores = Array.from(document.querySelectorAll('#scoreInputs input[type=range]'))
+    .sort((a,b)=>a.dataset.idx-b.dataset.idx)
+    .map(inp=>parseFloat(inp.value));
+  months.push({label, scores, visible:true});
+  await saveMonths();
+  labelInput.value = '';
+  document.getElementById('pasteBox').value = '';
+  document.getElementById('pasteStatus').textContent = '';
+  buildScoreInputs();
+  renderMonthList();
+  renderChart();
+});
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const svgEl = document.querySelector('#chartWrap svg');
+  if(!svgEl){ return; }
+
+  // 明示的なピクセルサイズを持つ複製を作る(相対サイズのままだと変換時に崩れるため)
+  const vb = svgEl.viewBox.baseVal;
+  const exportW = vb && vb.width ? vb.width : 1280;
+  const exportH = vb && vb.height ? vb.height : 720;
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('width', exportW);
+  clone.setAttribute('height', exportH);
+  clone.removeAttribute('style');
+
+  const serializer = new XMLSerializer();
+  let source = serializer.serializeToString(clone);
+  if(!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)){
+    source = source.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+  const svgBlob = new Blob([source], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(svgBlob);
+  const img = new Image();
+  img.onload = ()=>{
+    const scale = 3;
+    const canvas = document.createElement('canvas');
+    canvas.width = exportW * scale;
+    canvas.height = exportH * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(blob=>{
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      const cn = document.getElementById('className').value.trim();
+      a.download = (cn ? cn + '_' : '') + '学級力レーダーチャート.png';
+      a.click();
+    });
+  };
+  img.onerror = ()=>{
+    URL.revokeObjectURL(url);
+    alert('画像の作成に失敗しました。もう一度お試しください。');
+  };
+  img.src = url;
+});
+
+(async function init(){
+  // 観点・合言葉の読み込み
+  try{
+    const savedCats = localStorage.getItem(CAT_KEY);
+    if(savedCats){
+      const arr = JSON.parse(savedCats);
+      if(Array.isArray(arr) && arr.length>=3) CATEGORIES = arr;
+    }
+  }catch(e){}
+  document.getElementById('catBox').value = CATEGORIES.join('\n');
+  try{
+    const savedMotto = localStorage.getItem(MOTTO_KEY);
+    if(savedMotto) document.getElementById('mottoInput').value = savedMotto;
+  }catch(e){}
+  document.getElementById('mottoInput').addEventListener('input', ()=>{
+    try{ localStorage.setItem(MOTTO_KEY, document.getElementById('mottoInput').value); }catch(e){}
+    renderChart();
+  });
+  document.getElementById('applyCats').addEventListener('click', ()=>{
+    const lines = document.getElementById('catBox').value
+      .split(/[\n\r]+/).map(l=>l.trim()).filter(l=>l.length>0);
+    if(lines.length < 3){
+      alert('観点は3つ以上入力してください(1行に1つ)。');
+      return;
+    }
+    if(lines.length > 12){
+      alert('観点は12個までにしてください。');
+      return;
+    }
+    const countChanged = lines.length !== CATEGORIES.length;
+    CATEGORIES = lines;
+    try{ localStorage.setItem(CAT_KEY, JSON.stringify(CATEGORIES)); }catch(e){}
+    buildScoreInputs();
+    renderChart();
+    if(countChanged && months.length > 0){
+      alert('観点の数が変わりました。記録済みのデータと合わなくなっている可能性があるため、集計シートから貼り付け直すことをおすすめします。');
+    }
+  });
+
+  buildScoreInputs();
+  await loadMonths();
+  try{
+    const savedClass = localStorage.getItem(CLASS_KEY);
+    if(savedClass) document.getElementById('className').value = savedClass;
+  }catch(e){}
+  document.getElementById('className').addEventListener('input', ()=>{
+    try{ localStorage.setItem(CLASS_KEY, document.getElementById('className').value); }catch(e){}
+    renderChart();
+  });
+  document.getElementById('monthLabel').placeholder = suggestLabel();
+  renderMonthList();
+  renderChart();
+})();
+</script>
+</body>
+</html>
