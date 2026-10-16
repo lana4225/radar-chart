@@ -164,6 +164,9 @@
   .month-item .avg{
     font-size:12px;color:#7a8783;
   }
+  .month-item .diff{
+    font-size:12px;font-weight:700;
+  }
   .icon-btn{
     background:none;
     color:#b0a99a;
@@ -342,6 +345,24 @@ async function saveMonths(){
 
 function colorFor(i){ return COLORS[i % COLORS.length]; }
 
+// 前月比(表示している小数1けたどうしで差を出すので、見た目の数字と必ず合う)
+const UP_COLOR = '#E60012', DOWN_COLOR = '#1A5FD6', SAME_COLOR = '#7a8783';
+function avgOf(scores){ return scores.reduce((a,b)=>a+b,0)/scores.length; }
+function round1(v){ return parseFloat(v.toFixed(1)); } // 画面の toFixed(1) と同じ丸め
+function isNum(v){ return typeof v === 'number' && !isNaN(v); }
+function diffInfo(cur, prev){
+  if(!isNum(cur) || !isNum(prev)) return null;
+  const d = Math.round((round1(cur) - round1(prev))*10)/10;
+  if(d > 0) return {text:'＋' + d.toFixed(1), color:UP_COLOR};
+  if(d < 0) return {text:'－' + Math.abs(d).toFixed(1), color:DOWN_COLOR};
+  return {text:'±0.0', color:SAME_COLOR};
+}
+// i番目の月の、すぐ前に記録した月との差
+function monthDiff(i){
+  if(i <= 0) return null;
+  return diffInfo(avgOf(months[i].scores), avgOf(months[i-1].scores));
+}
+
 function renderMonthList(){
   const list = document.getElementById('monthList');
   const empty = document.getElementById('emptyMsg');
@@ -356,6 +377,7 @@ function renderMonthList(){
       <span class="swatch" style="background:${colorFor(i)}"></span>
       <span class="name">${m.label}</span>
       <span class="avg">平均${avg}</span>
+      ${(d=>d ? `<span class="diff" style="color:${d.color}">${d.text}</span>` : '')(monthDiff(i))}
       <button class="icon-btn" data-del="${i}">✕</button>
     `;
     list.appendChild(item);
@@ -404,6 +426,16 @@ function renderChart(){
     });
     return cnt ? sum/cnt : null;
   });
+
+  // 重ねて表示していても、表示中でいちばん新しい回と、その前の回との差を出す
+  let axisDiffs = CATEGORIES.map(()=>null);
+  if(visibleMonths.length >= 1){
+    const curIdx = months.indexOf(visibleMonths[visibleMonths.length-1]);
+    if(curIdx > 0){
+      const cur = months[curIdx], prev = months[curIdx-1];
+      axisDiffs = CATEGORIES.map((_, i)=>diffInfo(cur.scores[i], prev.scores[i]));
+    }
+  }
 
   function estWidth(str, fontSize){
     let w = 0;
@@ -454,6 +486,13 @@ function renderChart(){
       const bw = 26 + avgText.length*12;
       svg += `<rect x="${bx - bw/2}" y="${by-19}" width="${bw}" height="36" rx="18" fill="#e6efec" stroke="#1f6f65" stroke-width="1.5"/>`;
       svg += `<text x="${bx}" y="${by}" font-size="20" font-weight="700" fill="#1f6f65" text-anchor="middle" dominant-baseline="central" font-family="Zen Kaku Gothic New, sans-serif">${avgText}</text>`;
+      const ad = axisDiffs[i];
+      if(ad){
+        // 左側の観点は丸の左へ、それ以外は丸の右へ(チャートに重ねない)
+        const toLeft = anchor === 'end';
+        const dx = toLeft ? bx - bw/2 - 6 : bx + bw/2 + 6;
+        svg += `<text x="${dx}" y="${by}" font-size="20" font-weight="700" fill="${ad.color}" text-anchor="${toLeft ? 'end' : 'start'}" dominant-baseline="central" font-family="Zen Kaku Gothic New, sans-serif">${ad.text}</text>`;
+      }
     }
   }
 
@@ -486,6 +525,11 @@ function renderChart(){
       const rowY = startY + order*rowH;
       svg += `<rect x="${legendX}" y="${rowY-6}" width="26" height="9" rx="4.5" fill="${color}"/>`;
       svg += `<text x="${legendX+34}" y="${rowY}" font-size="17" font-weight="700" fill="${color}" dominant-baseline="middle" font-family="Zen Kaku Gothic New, sans-serif">${m.label}　${avg}</text>`;
+      // 前月比は名前の下に小さく(行の間があるときだけ)
+      const md = monthDiff(idx);
+      if(md && rowH >= 32){
+        svg += `<text x="${legendX+34}" y="${rowY+16}" font-size="13" font-weight="700" fill="${md.color}" dominant-baseline="middle" font-family="Zen Kaku Gothic New, sans-serif">前月より ${md.text}</text>`;
+      }
     });
   }
 
@@ -501,7 +545,14 @@ function renderChart(){
 
   const validAvgs = axisAverages.filter(v=>typeof v==='number' && !isNaN(v));
   const overall = validAvgs.length ? validAvgs.reduce((a,b)=>a+b,0)/validAvgs.length : 0;
-  note.innerHTML = `クラス全体平均：　${overall.toFixed(1)}`;
+  let noteDiff = '';
+  const latest = visibleMonths[visibleMonths.length-1];
+  const od = monthDiff(months.indexOf(latest));
+  if(od){
+    const who = visibleMonths.length === 1 ? '' : `${latest.label}は`;
+    noteDiff = `　<span style="color:${od.color};font-weight:700;">(${who}前月より ${od.text})</span>`;
+  }
+  note.innerHTML = `クラス全体平均：　${overall.toFixed(1)}${noteDiff}`;
 }
 
 function suggestLabel(){
