@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>村の米ぐら</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#FFF3C4;font-family:"BIZ UDPGothic","Yu Gothic UI","Meiryo",sans-serif;color:#1A1A1A}
+button{font-family:inherit;cursor:pointer;border:0;color:#fff;font-weight:bold}
+ruby rt{font-size:.42em;font-weight:normal}
+.view{position:absolute;inset:0;display:none}
+.view.on{display:block}
+.stage{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;background:#FFF3C4}
+.abs{position:absolute}
+/* 選ぶ画面 */
+.sel{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:16px}
+.sel h1{font-size:64px;color:#7A3E00}
+.sel p{font-size:28px}
+.sel button{width:min(640px,90vw);padding:34px 20px;font-size:40px;border-radius:22px;background:#0068B7}
+.sel button.h{background:#1E8E3E}
+/* 俵 */
+.taw{position:absolute;border:2px solid #6B3E00;background:repeating-linear-gradient(90deg,#F2A900 0 5px,#C27C00 5px 7px);transition:left .9s ease,top .9s ease,width .9s,height .9s,opacity .5s,transform .4s,box-shadow .2s}
+.noanim .taw,.noanim .tile,.noanim *{transition:none!important}
+.taw.hid{opacity:0;pointer-events:none}
+.b .taw{width:34px;height:22px;border-radius:9px}
+.h .taw{width:66px;height:44px;border-radius:16px;border-width:3px}
+.h .taw.me{cursor:pointer}
+.h .taw.me:active{transform:scale(.9)}
+.taw.lock{filter:saturate(.6) brightness(.9)}
+.taw.bonus{transform:scale(.2)}
+.taw.bonus.on{transform:scale(1)}
+/* 電子黒板 */
+.btitle{left:30px;top:8px;font-size:52px;font-weight:bold;color:#7A3E00;line-height:72px}
+.bstage{right:30px;top:8px;font-size:44px;font-weight:bold;color:#E60012;line-height:72px;text-align:right}
+.map{left:20px;top:90px;width:1280px;height:810px;background:#CDEBA0;border:5px solid #2E7D32;border-radius:18px}
+.mtn{position:absolute;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.river{left:20px;top:515px;width:1280px;height:40px;background:#1E88E5;border-top:4px solid #0D47A1;border-bottom:4px solid #0D47A1}
+.tile{position:absolute;width:300px;height:290px;background:#9BD84E;border:5px solid #2E7D32;border-radius:14px;cursor:pointer;transition:background .8s,border-color .8s}
+.tile .nm{position:absolute;left:8px;top:6px;width:44px;height:44px;border-radius:50%;background:#fff;border:3px solid #2E7D32;font-size:30px;font-weight:bold;text-align:center;line-height:38px}
+.tile .bd{position:absolute;right:8px;top:8px;min-width:100px;height:40px;border-radius:20px;background:#0068B7;color:#fff;font-size:26px;font-weight:bold;text-align:center;line-height:40px;padding:0 12px}
+.tile .bd.no{background:#fff;color:#555;border:3px dashed #888;line-height:34px}
+.tile .bd.tc{background:#E65100;font-size:22px}
+.tile .ct{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:26px;font-weight:bold;line-height:1.15}
+.tile.waste{background:repeating-linear-gradient(45deg,#A3A3A3 0 12px,#8E8E8E 12px 24px);border-color:#555;cursor:default}
+.tile.waste .nm{border-color:#555}
+.tile.waste .bd{background:#555}
+.panel{left:1330px;top:100px;width:570px}
+.boxbox{left:1330px;top:100px;width:570px;height:330px;background:#F8E7BC;border:8px solid #7A4A00;border-radius:10px}
+.boxbox .bt{position:absolute;left:0;right:0;top:4px;text-align:center;font-size:36px;font-weight:bold;color:#7A3E00}
+.info{left:1330px;top:450px;width:570px;text-align:center}
+.info .n1{font-size:64px;font-weight:bold;color:#7A3E00;line-height:1.3}
+.info .n2{font-size:46px;font-weight:bold;color:#0068B7;line-height:1.4}
+.info .msg{font-size:38px;font-weight:bold;color:#E60012;line-height:1.5;margin-top:16px}
+.info .sm{font-size:30px;margin-top:14px;color:#333}
+.bar{left:20px;top:915px;width:1880px;height:150px;display:flex;gap:10px}
+.bar button{flex:1;font-size:28px;line-height:1.3;border-radius:16px;background:#0068B7;padding:4px}
+.bar button.cur{background:#E60012;outline:6px solid #FFD400}
+.bar button.gr{background:#444}
+.bar button.wn{background:#6A1B9A}
+.bar button small{display:block;font-size:22px;font-weight:normal}
+.cmp{left:20px;top:90px;width:1280px;height:810px;background:#FFFDF2;border:5px solid #7A4A00;border-radius:18px;padding:14px 20px}
+.cmp .ct{font-size:28px;font-weight:bold;line-height:1.7;color:#333;height:96px}
+.cr{height:104px;display:flex;align-items:flex-start;gap:14px;border-top:2px solid #ddd;padding-top:8px}
+.cl{width:230px;font-size:30px;font-weight:bold}
+.cl span{display:block;font-size:22px;font-weight:normal;color:#444}
+.cb{position:relative;width:740px;height:60px;margin-top:2px}
+.cb .need{z-index:2;position:absolute;left:0;top:0;height:60px;border:4px dashed #0D47A1;border-radius:6px}
+.cb .rem{position:absolute;left:0;top:0;height:60px;background:#1E9E3A;border-radius:6px 0 0 6px;color:#fff;font-size:34px;font-weight:bold;line-height:60px;text-align:right;padding-right:10px}
+.cb .def{position:absolute;top:0;height:60px;background:#E60012}
+.cb .lb{position:absolute;left:0;top:64px;font-size:24px;color:#222;white-space:nowrap}
+.cs{width:260px;font-size:30px;font-weight:bold;color:#E60012;line-height:1.2;padding-top:6px}
+.cs b{font-size:52px}
+.cs.ok{color:#1E9E3A}
+.cs.un{color:#777;font-weight:normal;font-size:24px}
+.modal{position:absolute;inset:0;background:rgba(0,0,0,.55);display:none;z-index:20}
+.modal.on{display:block}
+.mbox{position:absolute;left:460px;top:180px;width:1000px;background:#fff;border-radius:22px;border:6px solid #0068B7;padding:30px;text-align:center}
+.mbox h2{font-size:44px;margin-bottom:24px}
+.mbox .g{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
+.mbox .g button{width:260px;height:110px;font-size:42px;border-radius:16px;background:#0068B7}
+.mbox .g button.sel{background:#E60012}
+.mbox .g button.gr{background:#666}
+.mbox p{font-size:30px;margin-bottom:14px}
+.mbox .cl2{margin-top:26px;width:300px;height:90px;font-size:36px;border-radius:14px;background:#444}
+/* 班のタブレット */
+.hhead{left:20px;top:8px;width:1326px;height:72px;font-size:40px;font-weight:bold;line-height:72px;color:#7A3E00;display:flex;justify-content:space-between}
+.hhead .st{color:#E60012}
+.hfield{left:20px;top:92px;width:880px;height:350px;background:#9BD84E;border:6px solid #2E7D32;border-radius:18px}
+.hfield .lbl{position:absolute;left:16px;top:8px;font-size:38px;font-weight:bold;color:#1B5E20}
+.hfield .cnt{position:absolute;right:16px;bottom:10px;font-size:40px;font-weight:bold;color:#E60012;background:#fff;border-radius:12px;padding:0 16px}
+.hbox{left:930px;top:92px;width:416px;height:240px;background:#F8E7BC;border:8px solid #7A4A00;border-radius:10px}
+.hbox .bt{position:absolute;left:0;right:0;top:4px;text-align:center;font-size:32px;font-weight:bold;color:#7A3E00}
+.hmsg{left:20px;top:456px;width:880px;height:170px;font-size:40px;font-weight:bold;line-height:1.45;color:#222}
+.hmsg .sub{font-size:30px;color:#444;font-weight:normal}
+.hside{left:930px;top:346px;width:416px}
+.hside .big{font-size:46px;font-weight:bold;line-height:1.35;text-align:center}
+.hbtn{position:absolute;font-size:36px;border-radius:18px;background:#0068B7;line-height:1.25;padding:6px}
+.hbtn.sub{background:#7B1FA2}
+.hbtn.dis{background:#aaa!important;pointer-events:none}
+.hbtn.gr{background:#555}
+.hbtn.go{background:#E60012}
+.red{color:#E60012}.grn{color:#1E8E3E}.blu{color:#0068B7}
+.hset h2{font-size:38px;color:#7A3E00;margin:6px 0 10px}
+.hset .g{display:flex;gap:14px;flex-wrap:wrap}
+.hset .g button{width:150px;height:96px;font-size:44px;border-radius:16px;background:#0068B7}
+.hset .g button.sel{background:#E60012;outline:6px solid #FFD400}
+.back{position:absolute;right:8px;bottom:6px;font-size:18px;background:#8a8a8a;border-radius:8px;padding:4px 10px;z-index:30}
+</style>
+</head>
+<body>
+
+<div id="vSel" class="view on"><div class="sel">
+  <h1 id="selT"></h1><p id="selP"></p>
+  <button id="goB">電子黒板（先生が そうさ）</button>
+  <button id="goH" class="h">班の タブレット</button>
+</div></div>
+
+<div id="vB" class="view"><div id="bS" class="stage b" style="width:1920px;height:1080px"></div></div>
+<div id="vH" class="view"><div id="hS" class="stage h" style="width:1366px;height:768px"></div></div>
+
+<script>
+// ==CORE==
+var FIELDS=[
+ {id:'ア',h:28,y1:9,y2:6},{id:'イ',h:24,y1:7,y2:5},{id:'ウ',h:30,y1:10,y2:6},
+ {id:'エ',h:22,y1:7,y2:5},{id:'オ',h:36,y1:12,y2:9},{id:'カ',h:21,y1:7,y2:4},
+ {id:'キ',h:5,y1:5,y2:0,t:true},{id:'ク',h:3,y1:3,y2:0,t:true}];
+var KIDS=['ア','イ','ウ','エ','オ','カ'];
+function fld(id){for(var i=0;i<FIELDS.length;i++)if(FIELDS[i].id===id)return FIELDS[i];return null;}
+function sum(key){var s=0;FIELDS.forEach(function(f){s+=f[key];});return s;}
+function remain(f){return f.h-f.y1-f.y2;}
+function totalRemain(){return sum('h')-sum('y1')-sum('y2');}
+function need(n){return n*2.5+1;}
+function compareRows(assign,big){
+  var rows=[];
+  for(var b=1;b<=6;b++){
+    var fid=null;KIDS.forEach(function(k){if(assign[k]===b)fid=k;});
+    var n=(big||[]).indexOf(b)>=0?7:6, nd=need(n);
+    var rem=fid?remain(fld(fid)):null;
+    rows.push({ban:b,n:n,fid:fid,rem:rem,need:nd,short:rem===null?null:Math.max(0,nd-rem)});
+  }
+  return rows;
+}
+// ==END CORE==
+
+// ---------- ふりがな ----------
+var RB=[['年貢','ねんぐ'],['俵','ひょう'],['荒','あ']];
+function T(s){
+  return String(s).split(/(<[^>]+>)/).map(function(p){
+    if(p.charAt(0)==='<')return p;
+    RB.forEach(function(r){p=p.split(r[0]).join('\u0001'+r[0]+'\u0002'+r[1]+'\u0003');});
+    return p.replace(/\u0001([^\u0002]+)\u0002([^\u0003]+)\u0003/g,'<ruby>$1<rt>$2</rt></ruby>');
+  }).join('');
+}
+function setT(el,s){el.innerHTML=T(s);}
+function el(tag,cls,parent,html){var e=document.createElement(tag);if(cls)e.className=cls;if(parent)parent.appendChild(e);if(html!==undefined)setT(e,html);return e;}
+function fmt(x){return String(x);}
+
+// ---------- 起動・切りかえ ----------
+var GAS_VIEW='__VIEW__';
+var Q={};(location.search||'').replace(/^\?/,'').split('&').forEach(function(p){if(p){var a=p.split('=');Q[a[0]]=decodeURIComponent(a[1]||'');}});
+var DBG=('s' in Q)||('dbg' in Q);
+if(DBG)document.body.classList.add('noanim');
+function save(k,o){if(DBG)return;try{localStorage.setItem(k,JSON.stringify(o));}catch(e){}}
+function load(k){if(DBG)return null;try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
+function fitAll(){
+  [['bS',1920,1080],['hS',1366,768]].forEach(function(a){
+    var st=document.getElementById(a[0]);var s=Math.min(innerWidth/a[1],innerHeight/a[2]);
+    st.style.transform='translate('+((innerWidth-a[1]*s)/2)+'px,'+((innerHeight-a[2]*s)/2)+'px) scale('+s+')';
+  });
+}
+addEventListener('resize',fitAll);
+function show(v){
+  document.getElementById('vSel').className='view'+(v==='sel'?' on':'');
+  document.getElementById('vB').className='view'+(v==='board'?' on':'');
+  document.getElementById('vH').className='view'+(v==='han'?' on':'');
+  fitAll();
+}
+setT(document.getElementById('selT'),'村の米ぐら');
+setT(document.getElementById('selP'),'つかう画面を えらんでください');
+document.getElementById('goB').onclick=function(){show('board');};
+document.getElementById('goH').onclick=function(){openHan();};
+function openHan(){var l=load('komegura_h');if(DBG||(l&&l.started))hPlay();else hSet();show('han');}
+
+// =====================================================
+//  電子黒板
+// =====================================================
+var B={stage:0,assign:{},big:[]};
+var TILE={ア:[30,215],イ:[350,215],ウ:[670,215],エ:[990,215],オ:[30,565],カ:[350,565],キ:[670,565],ク:[990,565]};
+var STAGES=['田んぼをえらぶ','秋　お米がとれた','年貢 1回目','年貢 2回目','残りを比べる','にげ出した','村が立ち直った'];
+var bTaw={},bBonus={},bTile={},bUI={};
+var BOX0=[1352,170];
+function slotXY(id,j){var t=TILE[id];return [t[0]+14+(j%7)*40,t[1]+58+Math.floor(j/7)*30];}
+function boxXY(k){return [BOX0[0]+(k%12)*44,BOX0[1]+Math.floor(k/12)*30];}
+var OFF1={},OFF2={};
+(function(){var a=0,b=60;FIELDS.forEach(function(f){OFF1[f.id]=a;a+=f.y1;OFF2[f.id]=b;b+=f.y2;});})();
+
+function buildBoard(){
+  var S=document.getElementById('bS');S.innerHTML='';
+  el('div','abs btitle',S,'村の米ぐら');
+  bUI.stage=el('div','abs bstage',S);
+  var map=el('div','abs map',S);
+  [[40,20,420,'#3E7C34'],[300,12,360,'#2E6B2A'],[560,24,440,'#4D8F3B'],[900,14,340,'#2E6B2A']].forEach(function(m){
+    var d=el('div','mtn',map);d.style.left=m[0]+'px';d.style.top=m[1]+'px';d.style.width=m[2]+'px';d.style.height='100px';d.style.background=m[3];});
+  el('div','abs river',S);
+  FIELDS.forEach(function(f){
+    var t=el('div','tile',S);t.style.left=TILE[f.id][0]+'px';t.style.top=TILE[f.id][1]+'px';
+    var nm=el('div','nm',t,f.id),bd=el('div','bd',t),ct=el('div','ct',t);
+    t.onclick=function(){if(!f.t)openAssign(f.id);};
+    bTile[f.id]={e:t,bd:bd,ct:ct,nm:nm};
+  });
+  var bx=el('div','abs boxbox',S);el('div','bt',bx,'年貢の箱');
+  // 俵
+  FIELDS.forEach(function(f){
+    bTaw[f.id]=[];for(var j=0;j<f.h;j++){bTaw[f.id].push(el('div','taw hid',S));}
+    if(f.t){bBonus[f.id]=[];for(var k=0;k<30;k++){var e=el('div','taw bonus hid',S);e.style.transitionDelay=(k*35)+'ms';bBonus[f.id].push(e);}}
+  });
+  bUI.info=el('div','abs info',S);
+  bUI.cmp=el('div','abs cmp',S);
+  var bar=el('div','abs bar',S);bUI.btns=[];
+  function mk(txt,cls,fn,s){var b=el('button',cls||'',bar,txt);b.onclick=fn;if(s!==undefined)b.dataset.s=s;bUI.btns.push(b);return b;}
+  mk('◀ 前に<br>もどる','gr',function(){go(Math.max(0,B.stage-1));});
+  mk('① 秋<small>お米がとれた</small>','',function(){go(1);},1);
+  mk('② 年貢<small>1回目</small>','',function(){go(2);},2);
+  mk('③ 年貢<small>2回目</small>','',function(){go(3);},3);
+  mk('④ 残りを<br>比べる','',function(){go(4);},4);
+  mk('⑤ にげ出した','',function(){go(5);},5);
+  mk('⑥ 村が<br>立ち直った','',function(){go(6);},6);
+  mk('⚙ 班の人数','wn',function(){openSet();});
+  var rs=mk('はじめに<br>もどす','gr',function(){
+    if(rs.dataset.arm==='1'){rs.dataset.arm='0';setT(rs,'はじめに<br>もどす');B.stage=0;saveB();renderB();}
+    else{rs.dataset.arm='1';setT(rs,'もう一度<br>おすと もどる');setTimeout(function(){if(rs.dataset.arm==='1'){rs.dataset.arm='0';setT(rs,'はじめに<br>もどす');}},3000);}
+  });
+  // モーダル
+  var m=el('div','modal',S);bUI.modal=m;m.onclick=function(e){if(e.target===m)m.classList.remove('on');};
+  bUI.mbox=el('div','mbox',m);
+}
+function saveB(){save('komegura_b',B);}
+function go(s){B.stage=s;saveB();renderB();}
+function openAssign(id){
+  var mb=bUI.mbox;mb.innerHTML='';el('h2','',mb,'田んぼ「'+id+'」は 何班？');
+  var g=el('div','g',mb);
+  for(var b=1;b<=6;b++)(function(b){
+    var btn=el('button',B.assign[id]===b?'sel':'',g,b+'班');
+    btn.onclick=function(){KIDS.forEach(function(k){if(B.assign[k]===b)delete B.assign[k];});B.assign[id]=b;saveB();bUI.modal.classList.remove('on');renderB();};
+  })(b);
+  var n=el('button','gr',g,'だれも いない');n.onclick=function(){delete B.assign[id];saveB();bUI.modal.classList.remove('on');renderB();};
+  var c=el('button','cl2',mb,'とじる');c.onclick=function(){bUI.modal.classList.remove('on');};
+  bUI.modal.classList.add('on');
+}
+function openSet(){
+  var mb=bUI.mbox;mb.innerHTML='';el('h2','',mb,'班の人数');
+  el('p','',mb,'ふつうは どの班も 6人（必要な米 16俵）。7人の班だけ おしてください（18.5俵）。');
+  var g=el('div','g',mb);
+  for(var b=1;b<=6;b++)(function(b){
+    var is7=B.big.indexOf(b)>=0;
+    var btn=el('button',is7?'sel':'',g,b+'班　'+(is7?'7人':'6人'));
+    btn.onclick=function(){var i=B.big.indexOf(b);if(i>=0)B.big.splice(i,1);else B.big.push(b);saveB();openSet();renderB();};
+  })(b);
+  var c=el('button','cl2',mb,'とじる');c.onclick=function(){bUI.modal.classList.remove('on');};
+  bUI.modal.classList.add('on');
+}
+function renderB(){
+  var s=B.stage;
+  setT(bUI.stage,STAGES[s]);
+  bUI.btns.forEach(function(b){if(b.dataset.s!==undefined){b.classList.toggle('cur',+b.dataset.s===s);}});
+  // 田んぼ
+  FIELDS.forEach(function(f){
+    var t=bTile[f.id],waste=(s===5);
+    var isW=!!(f.t&&waste);
+    t.e.classList.toggle('waste',isW);
+    t.e.style.visibility=(s===4)?'hidden':'visible';
+    if(f.t){setT(t.bd,isW?'荒れ地':'先生の田んぼ');t.bd.className='bd tc';}
+    else{var a=B.assign[f.id];if(a){setT(t.bd,a+'班');t.bd.className='bd';}else{setT(t.bd,s===0?'タップ':'？');t.bd.className='bd no';}}
+    var txt='';
+    if(isW)txt='';
+    else if(f.t&&s===6)txt='';
+    else if(s===1)txt='とれた '+f.h+'俵';
+    else if(s===2)txt='年貢 '+f.y1+' → 残り '+(f.h-f.y1);
+    else if(s===3)txt='年貢 '+(f.y1+f.y2)+' → 残り '+remain(f);
+    else if(s>=5||s===4)txt='残り '+remain(f)+'俵';
+    setT(t.ct,txt);
+    // 俵
+    bTaw[f.id].forEach(function(e,j){
+      var pos=null,vis=true;
+      if(s===0){vis=false;}
+      else if(s>=2&&j>=f.h-f.y1){pos=boxXY(OFF1[f.id]+(j-(f.h-f.y1)));}
+      else if(s>=3&&j>=f.h-f.y1-f.y2){pos=boxXY(OFF2[f.id]+(j-(f.h-f.y1-f.y2)));}
+      else{pos=slotXY(f.id,j);if(s===4||isW)vis=false;}
+      if(pos){e.style.left=pos[0]+'px';e.style.top=pos[1]+'px';}
+      e.classList.toggle('hid',!vis);
+    });
+    if(f.t)bBonus[f.id].forEach(function(e,k){var p=slotXY(f.id,k);e.style.left=p[0]+'px';e.style.top=p[1]+'px';
+      e.classList.toggle('hid',s!==6);e.classList.toggle('on',s===6);});
+  });
+  // 情報
+  var boxN=s>=3?95:(s===2?60:0), inf='';
+  if(s>=1&&s<=3||s===4){
+    if(s>=2){inf+='<div class="n1">年貢 '+boxN+'俵</div><div class="n2">95俵まで あと '+(95-boxN)+'俵</div>';}
+    else inf+='<div class="n1">年貢 0俵</div><div class="n2">村の年貢は 95俵</div>';
+  }
+  if(s===3)inf+='<div class="msg">とれなかった者の分は、<br>他の者が出す決まり</div>';
+  if(s===0){
+    inf+='<div class="sm">田んぼを タップして<br>班を えらぼう</div>';
+    var big=B.big.slice().sort().map(function(b){return b+'班';});
+    inf+='<div class="sm">1人 1年に食べる米 約2.5俵<br>来年の種もみ 1俵<br>'+(big.length?('7人の班：'+big.join('・')+'<br>'):'')+'</div>';
+  }
+  if(s===5||s===6)inf+='<div class="n2">年貢 95俵</div>';
+  setT(bUI.info,inf);
+  // 比べる
+  bUI.cmp.style.display=(s===4)?'block':'none';
+  if(s===4)renderCmp();
+}
+function barHtml(r,SC,wid){
+  var nd=r.need*SC,rm=(r.rem||0)*SC;
+  var h='<div class="cb" style="width:'+wid+'px"><div class="need" style="width:'+nd+'px"></div>';
+  h+='<div class="rem" style="width:'+rm+'px">'+(r.rem!==null?r.rem:'')+'</div>';
+  if(r.short>0)h+='<div class="def" style="left:'+rm+'px;width:'+(r.short*SC)+'px"></div>';
+  h+='<div class="lb">残り '+(r.rem===null?'？':r.rem)+'俵　／　必要な米 '+fmt(r.need)+'俵（点線）</div></div>';
+  return h;
+}
+function renderCmp(){
+  var rows=compareRows(B.assign,B.big);
+  var any7=B.big.length>0;
+  var h='<div class="ct">1人 1年に食べる米 約2.5俵 ＋ 来年の種もみ 1俵<br>＝ 6人の班は 16俵'+(any7?'　7人の班は 18.5俵':'')+'　が必要</div>';
+  rows.forEach(function(r){
+    h+='<div class="cr"><div class="cl">'+r.ban+'班<span>'+r.n+'人・田んぼ'+(r.fid||'？')+'</span></div>'+barHtml(r,36,740);
+    if(r.short===null)h+='<div class="cs un">田んぼが きまっていません</div>';
+    else if(r.short>0)h+='<div class="cs">足りない<br><b>'+fmt(r.short)+'</b>俵</div>';
+    else h+='<div class="cs ok">足りる</div>';
+    h+='</div>';
+  });
+  setT(bUI.cmp,h);
+}
+document.addEventListener('keydown',function(e){
+  if(document.getElementById('vB').className.indexOf('on')<0)return;
+  if(e.key==='ArrowRight')go(Math.min(6,B.stage+1));
+  if(e.key==='ArrowLeft')go(Math.max(0,B.stage-1));
+});
+
+// =====================================================
+//  班のタブレット
+// =====================================================
+var H={s:0,ban:1,fid:'ア',n:6,sel1:[],sel2:[],counted:false,yaku:false,def:false};
+var hUI={},hTaw=[];
+function saveH(){save('komegura_h',H);}
+var HSTEP=['はじめ','秋','年貢 1回目','年貢 2回目','残りを数える'];
+function hf(){return fld(H.fid);}
+function hSlot(j){return [20+14+(j%9)*92,92+66+Math.floor(j/9)*62];}
+function hBoxXY(k){return [930+16+(k%7)*58,92+60+Math.floor(k/7)*46];}
+function buildHan(){
+  var S=document.getElementById('hS');S.innerHTML='';
+  hUI.S=S;
+}
+function hSet(){
+  var S=hUI.S;S.innerHTML='';hTaw=[];
+  var w=el('div','abs hset',S);w.style.cssText='left:30px;top:20px;width:1300px';
+  el('h2','',w,'村の米ぐら　班の タブレット');
+  el('h2','',w,'① 班は？');
+  var g1=el('div','g',w);
+  for(var b=1;b<=6;b++)(function(b){var x=el('button',H.ban===b?'sel':'',g1,b+'班');x.onclick=function(){H.ban=b;saveH();hSet();};})(b);
+  el('h2','',w,'② 田んぼは？');
+  var g2=el('div','g',w);
+  KIDS.forEach(function(k){var x=el('button',H.fid===k?'sel':'',g2,k);x.onclick=function(){H.fid=k;saveH();hSet();};});
+  el('h2','',w,'③ 人数は？（必要な米が かわります）');
+  var g3=el('div','g',w);
+  [6,7].forEach(function(n){var x=el('button',H.n===n?'sel':'',g3,n+'人');x.style.width='200px';x.onclick=function(){H.n=n;saveH();hSet();};});
+  var st=el('button','hbtn go',S,'はじめる ▶');st.style.cssText='left:420px;top:620px;width:520px;height:110px;font-size:46px';
+  st.onclick=function(){H.started=true;H.s=0;H.sel1=[];H.sel2=[];H.counted=false;H.yaku=false;H.def=false;saveH();hPlay();};
+}
+function hPlay(){
+  var S=hUI.S;S.innerHTML='';hTaw=[];var f=hf();
+  var hd=el('div','abs hhead',S);el('span','',hd,H.ban+'班　田んぼ'+f.id+'　（'+H.n+'人）');hUI.step=el('span','st',hd);
+  var fl=el('div','abs hfield',S);hUI.lbl=el('div','lbl',fl);hUI.cnt=el('div','cnt',fl);
+  var bx=el('div','abs hbox',S);el('div','bt',bx,'年貢の箱');
+  for(var j=0;j<f.h;j++)(function(j){
+    var e=el('div','taw hid',S);e.onclick=function(){hTap(j);};hTaw.push(e);
+  })(j);
+  hUI.msg=el('div','abs hmsg',S);
+  hUI.side=el('div','abs hside',S);
+  hUI.back=el('button','hbtn gr',S,'◀ もどる');hUI.back.style.cssText='left:20px;top:650px;width:260px;height:96px';
+  hUI.next=el('button','hbtn go',S,'');hUI.next.style.cssText='left:640px;top:650px;width:260px;height:96px';
+  hUI.sub=el('button','hbtn sub',S,'');hUI.sub.style.cssText='left:930px;top:650px;width:416px;height:96px';
+  hUI.back.onclick=function(){hBack();};hUI.next.onclick=function(){hNext();};hUI.sub.onclick=function(){hSub();};
+  var cg=el('button','back',S,'班をえらびなおす');cg.onclick=function(){hSet();};
+  renderH();
+}
+function hTarget(){return H.s===2?hf().y1:hf().y2;}
+function hTap(j){
+  var s=H.s;if(s!==2&&s!==3)return;
+  var mine=(s===2)?H.sel1:H.sel2;
+  if(s===3&&H.sel1.indexOf(j)>=0)return;
+  var i=mine.indexOf(j);if(i>=0)mine.splice(i,1);else mine.push(j);
+  saveH();renderH();
+}
+function hBack(){
+  if(H.s<=0){hSet();return;}
+  H.s--;if(H.s<2)H.sel1=[];if(H.s<3)H.sel2=[];if(H.s<1)H.counted=false;H.yaku=false;H.def=false;saveH();renderH();
+}
+function hNext(){
+  if(H.s===0){H.s=1;}
+  else if(H.s===1){H.s=2;H.yaku=false;}
+  else if(H.s===2&&H.sel1.length===hf().y1){H.s=3;H.yaku=false;}
+  else if(H.s===3&&H.sel2.length===hf().y2){H.s=4;}
+  saveH();renderH();
+}
+function hSub(){
+  if(H.s===1)H.counted=true;
+  else if(H.s===2||H.s===3)H.yaku=true;
+  else if(H.s===4)H.def=true;
+  saveH();renderH();
+}
+function renderH(){
+  var f=hf(),s=H.s;
+  setT(hUI.step,HSTEP[s]);
+  // 俵の位置
+  hTaw.forEach(function(e,j){
+    var i1=H.sel1.indexOf(j),i2=H.sel2.indexOf(j),pos,vis=s>=1,me=false,lock=false;
+    if(i1>=0&&s>=2){pos=hBoxXY(i1);lock=(s>=3);me=(s===2);}
+    else if(i2>=0&&s>=3){pos=hBoxXY(H.sel1.length+i2);me=(s===3);}
+    else{pos=hSlot(j);me=(s===2||s===3);}
+    e.style.left=pos[0]+'px';e.style.top=pos[1]+'px';
+    var inb=(i1>=0&&s>=2)||(i2>=0&&s>=3);e.style.width=inb?'52px':'66px';e.style.height=inb?'34px':'44px';
+    e.classList.toggle('hid',!vis);e.classList.toggle('me',me);e.classList.toggle('lock',lock);
+  });
+  var rem=f.h-(s>=3?H.sel1.length:0)-(s>=4?H.sel2.length:0);
+  // 田んぼの札
+  setT(hUI.lbl,'田んぼ '+f.id);
+  if(s===1&&H.counted){setT(hUI.cnt,'ぜんぶで '+f.h+'俵');hUI.cnt.style.display='block';}
+  else if(s===4){setT(hUI.cnt,'残り '+rem+'俵');hUI.cnt.style.display='block';}
+  else hUI.cnt.style.display='none';
+  // 年貢の箱の数
+  var m='',side='',nxt='',sub='',nxtOn=true,subOn=true;
+  if(s===0){
+    m='<span>田んぼを 見てみよう。</span><br><span class="sub">先生が「秋」と言ったら、下のボタンをおします。</span>';
+    nxt='秋 ▶';sub='';
+  }else if(s===1){
+    m='秋になって、お米が とれました。<br><span class="sub">俵の数を 数えて、記録表に書こう。</span>';
+    nxt='年貢 1回目 ▶';sub=H.counted?'':'数える';subOn=!H.counted;
+  }else if(s===2||s===3){
+    var t=hTarget(),mine=(s===2?H.sel1:H.sel2),n=mine.length,k=(s===2?'1回目':'2回目');
+    m='年貢 '+k+'。役人に言われた数だけ、<br>俵を タップして 年貢の箱に入れよう。';
+    if(s===3)m+='<br><span class="sub">とれなかった者の分は、他の者が出す決まりです。</span>';
+    side='<div class="big">いま '+n+'俵<br>';
+    if(n===t)side+='<span class="grn">ちょうど！ できた</span>';
+    else if(n>t)side+='<span class="red">多すぎるよ。もどそう</span>';
+    else side+='<span class="blu">まだ足りないよ</span>';
+    side+='</div>';
+    if(H.yaku)side+='<div class="big" style="margin-top:8px;font-size:40px">役人の数：<span class="red">'+t+'俵</span></div>';
+    sub=H.yaku?'':'役人の数を 見る';subOn=!H.yaku;
+    nxt=s===2?'年貢 2回目 ▶':'残りを数える ▶';nxtOn=(n===t);
+  }else if(s===4){
+    var nd=need(H.n),sh=Math.max(0,nd-rem);
+    m='残り '+rem+'俵<br>1年くらすのに必要な米 '+fmt(nd)+'俵';
+    var r={rem:rem,need:nd,short:sh};
+    side=barHtml(r,18,400).replace('class="cb"','class="cb" style="margin:0 0 40px"');
+    if(H.def)side+='<div class="big red">足りない '+fmt(sh)+'俵</div>';
+    sub=H.def?'':'足りない数を 見る';subOn=!H.def;nxt='';
+  }
+  setT(hUI.msg,m);setT(hUI.side,side);
+  setT(hUI.next,nxt);hUI.next.style.display=nxt?'block':'none';hUI.next.classList.toggle('dis',!nxtOn);
+  setT(hUI.sub,sub);hUI.sub.style.display=(sub&&subOn)?'block':'none';
+  // 年貢の箱に入っている数を、箱の下に（数える練習のため数字は出さない）
+}
+
+// ---------- 開始 ----------
+(function(){
+  buildBoard();buildHan();
+  var lb=load('komegura_b');if(lb&&typeof lb.stage==='number'){B.stage=lb.stage;B.assign=lb.assign||{};B.big=lb.big||[];}
+  var lh=load('komegura_h');if(lh&&typeof lh.s==='number'){H=lh;}
+  // 画面のデバッグ指定（撮影用）
+  if(DBG){
+    if(Q.a==='1'){KIDS.forEach(function(k,i){B.assign[k]=i+1;});}
+    if(Q.big)B.big=Q.big.split(',').map(Number);
+    if(Q.s!==undefined){B.stage=+Q.s;H.s=+Q.s;}
+    if(Q.f)H.fid=Q.f; if(Q.ban)H.ban=+Q.ban; if(Q.n)H.n=+Q.n;
+    var f=hf();
+    if(Q.k1!==undefined){H.sel1=[];for(var i=0;i<+Q.k1;i++)H.sel1.push(f.h-1-i);}
+    if(Q.k2!==undefined){H.sel2=[];for(var i2=0;i2<+Q.k2;i2++)H.sel2.push(i2);}
+    if(H.s>=3&&Q.k1===undefined){H.sel1=[];for(var i3=0;i3<f.y1;i3++)H.sel1.push(f.h-1-i3);}
+    if(H.s>=4&&Q.k2===undefined){H.sel2=[];for(var i4=0;i4<f.y2;i4++)H.sel2.push(i4);}
+    if(Q.c)H.counted=true; if(Q.def)H.def=true;
+  }
+  renderB();
+  var v=(/^(board|han)$/.test(GAS_VIEW)?GAS_VIEW:Q.v);
+  if(v==='han')openHan();
+  else if(v==='board')show('board');
+  else show('sel');
+})();
+</script>
+</body>
+</html>
