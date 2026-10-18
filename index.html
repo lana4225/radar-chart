@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>学級力レーダーチャート</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
   :root{
     --ink:#2b3a36;
@@ -20,7 +20,7 @@
   *{box-sizing:border-box;}
   body{
     margin:0;
-    font-family:"Zen Kaku Gothic New","Hiragino Sans",sans-serif;
+    font-family:"Zen Kaku Gothic New","Hiragino Sans","BIZ UDPGothic","Meiryo",sans-serif;
     background:var(--paper);
     color:var(--ink);
   }
@@ -35,7 +35,7 @@
     .app{grid-template-columns:1fr;}
   }
   h1{
-    font-family:"Zen Maru Gothic",sans-serif;
+    font-family:"Zen Maru Gothic","BIZ UDPGothic","Meiryo",sans-serif;
     font-weight:900;
     font-size:20px;
     color:var(--teal);
@@ -191,7 +191,7 @@
     margin-bottom:6px;
   }
   .chart-title{
-    font-family:"Zen Maru Gothic",sans-serif;
+    font-family:"Zen Maru Gothic","BIZ UDPGothic","Meiryo",sans-serif;
     font-weight:900;
     font-size:24px;
     color:var(--ink);
@@ -451,7 +451,7 @@ function renderChart(){
   const classNameVal = (document.getElementById('className') ? document.getElementById('className').value.trim() : '');
   const mottoVal = (document.getElementById('mottoInput') ? document.getElementById('mottoInput').value.trim() : '');
   const chartTitleText = (classNameVal ? classNameVal + '　' : '') + (mottoVal ? '「' + mottoVal + '」' : '') + '学級力レーダーチャート';
-  svg += `<text x="24" y="46" font-size="28" font-weight="900" fill="#1f6f65" font-family="Zen Maru Gothic, sans-serif">${chartTitleText}</text>`;
+  svg += `<text x="24" y="46" font-size="28" font-weight="900" fill="#1f6f65" font-family="Zen Maru Gothic, BIZ UDPGothic, Meiryo, sans-serif">${chartTitleText}</text>`;
 
   // grid rings
   for(let ring=1; ring<=5; ring++){
@@ -473,7 +473,7 @@ function renderChart(){
     const anchor = Math.abs(cosA) < 0.15 ? 'middle' : (cosA > 0 ? 'start' : 'end');
     const labelR = maxR + 46 + Math.abs(sinA)*12;
     const [lx,ly] = polarPoint(cx,cy,labelR,i*step);
-    svg += `<text x="${lx}" y="${ly}" font-size="${labelFontSize}" font-weight="700" fill="#2b3a36" text-anchor="${anchor}" dominant-baseline="middle" font-family="Zen Maru Gothic, sans-serif">${CATEGORIES[i]}</text>`;
+    svg += `<text x="${lx}" y="${ly}" font-size="${labelFontSize}" font-weight="700" fill="#2b3a36" text-anchor="${anchor}" dominant-baseline="middle" font-family="Zen Maru Gothic, BIZ UDPGothic, Meiryo, sans-serif">${CATEGORIES[i]}</text>`;
 
     if(axisAverages[i] !== null){
       const labelW = estWidth(CATEGORIES[i], labelFontSize);
